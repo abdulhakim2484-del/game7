@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smoke Slayer: Cyber City Edition 3D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #030308;
+            color: #fff;
+        }
+        #webgl-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .top-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .hud-group {
+            display: flex;
+            gap: 12px;
+        }
+        .hud-card {
+            background: rgba(10, 10, 20, 0.85);
+            border: 2px solid #00e5ff;
+            padding: 8px 18px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+            backdrop-filter: blur(8px);
+        }
+        .hud-title {
+            font-size: 10px;
+            color: #88a;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .hud-value {
+            font-size: 24px;
+            font-weight: 900;
+            color: #00e5ff;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+        }
+        .coin-val { color: #ffcc00; text-shadow: 0 0 8px rgba(255, 204, 0, 0.6); }
+        
+        .jetpack-status {
+            background: rgba(255, 0, 221, 0.85);
+            border: 2px solid #ff00dd;
+            padding: 8px 18px;
+            border-radius: 12px;
+            display: none;
+            box-shadow: 0 0 15px rgba(255, 0, 221, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .warning-tag {
+            background: rgba(255, 0, 85, 0.85);
+            border: 2px solid #ff0055;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 13px;
+            display: none;
+            letter-spacing: 1px;
+            animation: pulse 0.8s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); box-shadow: 0 0 20px rgba(255,0,85,0.8); }
+        }
+
+        .controls-hint {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #ccc;
+            border: 1px solid #223;
+        }
+
+        #quiz-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 480px;
+            background: rgba(12, 12, 22, 0.96);
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 35px rgba(255, 204, 0, 0.5);
+            border-radius: 16px;
+            padding: 24px;
+            z-index: 20;
+            display: none;
+            pointer-events: auto;
+        }
+        .quiz-badge {
+            display: inline-block;
+            background: #ffcc00;
+            color: #000;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .quiz-q {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            color: #fff;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn-opt {
+            background: #181828;
+            border: 1px solid #3d3d5c;
+            color: #fff;
+            padding: 13px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-opt:hover {
+            background: #ffcc00;
+            color: #000;
+            border-color: #ffcc00;
+            font-weight: bold;
+        }
+        .timer-bg {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            width: 100%;
+            height: 100%;
+            background: #ffcc00;
+        }
+
+        #screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 3, 8, 0.94);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .title {
+            font-size: 48px;
+            font-weight: 900;
+            color: #00e5ff;
+            text-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
+            margin-bottom: 5px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 15px;
+            text-align: center;
+        }
+        .btn-play {
+            background: linear-gradient(45deg, #ff0055, #ff00aa);
+            color: #fff;
+            border: none;
+            padding: 16px 50px;
+            font-size: 18px;
+            font-weight: 900;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(255, 0, 85, 0.7);
+            transition: transform 0.2s;
+        }
+        .btn-play:hover {
+            transform: scale(1.08);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="webgl-container"></div>
+
+    <div class="ui-layer">
+        <div class="top-hud">
+            <div class="hud-group">
+                <div class="hud-card">
+                    <div class="hud-title">SKOR</div>
+                    <div id="score-val" class="hud-value">0</div>
+                </div>
+                <div class="hud-card">
+                    <div class="hud-title">KOIN</div>
+                    <div id="coin-val" class="hud-value coin-val">0</div>
+                </div>
+                <div id="jetpack-hud" class="jetpack-status">
+                    <div class="hud-title" style="color:#fff;">PESAWAT TERBANG</div>
+                    <div id="jetpack-time" class="hud-value" style="color:#fff;">20s</div>
+                </div>
+            </div>
+            <div id="warning-tag" class="warning-tag">POLISI MENDEKAT!</div>
+        </div>
+        <div class="controls-hint">
+            A / D / Panah : Pindah Lane | W / Spasi : Lompat | S : Meluncur
+        </div>
+    </div>
+
+    <!-- Modal Kuis -->
+    <div id="quiz-modal">
+        <div class="quiz-badge">ITEM MISTERI (?)</div>
+        <div class="timer-bg">
+            <div id="quiz-timer" class="timer-fill"></div>
+        </div>
+        <div id="quiz-q" class="quiz-q">Pertanyaan kuis...</div>
+        <div id="quiz-options" class="options-list"></div>
+    </div>
+
+    <!-- Overlay Screen -->
+    <div id="screen-overlay">
+        <h1 id="menu-title" class="title">SMOKE SLAYER</h1>
+        <p id="menu-sub" class="subtitle">Cyber City 3D Runner - Dapatkan Pesawat & Hindari Rokok!</p>
+        <button id="btn-action" class="btn-play" onclick="startApp()">MULAI MAIN</button>
+    </div>
+
+    <script>
+        const quizBank = [
+            {
+                q: "Zat adiktif dalam rokok yang menyebabkan penyempitan pembuluh darah & kecanduan adalah...",
+                opts: ["Tar", "Nikotin", "Karbon Monoksida", "Formaldehida"],
+                ans: 1
+            },
+            {
+                q: "Gas beracun hasil pembakaran rokok yang mengikat hemoglobin darah adalah...",
+                opts: ["Amonia", "Arsenik", "Karbon Monoksida", "Benzena"],
+                ans: 2
+            },
+            {
+                q: "Zat padat lengket hitam yang mengendap di paru-paru perokok adalah...",
+                opts: ["Tar", "Nikotin", "Aseton", "Sianida"],
+                ans: 0
+            },
+            {
+                q: "Residu racun asap rokok yang tertinggal di baju dan furnitur rumah disebut...",
+                opts: ["Firsthand Smoke", "Secondhand Smoke", "Thirdhand Smoke", "Freehand Smoke"],
+                ans: 2
+            },
+            {
+                q: "Penyakit kronis akibat kerusakan kantung udara (alveolus) paru-paru adalah...",
+                opts: ["Asma", "Emfisema (PPOK)", "TBC", "Pneumonia"],
+                ans: 1
+            }
+        ];
+
+        let scene, camera, renderer;
+        let playerGroup, policeGroup;
+        let lanes = [-3.5, 0, 3.5];
+        let currentLane = 1;
+        let targetX = 0;
+
+        let isJumping = false;
+        let jumpVelocity = 0;
+        let isSliding = false;
+        let slideTimer = 0;
+
+        let isFlying = false;
+        let flyTimer = 0;
+        let jetpackItems = [];
+
+        let obstacles = [];
+        let coins = [];
+        let mysteryBoxes = [];
+        let buildings = [];
+        let streetLights = [];
+
+        let score = 0;
+        let coinCount = 0;
+        let speed = 0.45;
+        let isGameRunning = false;
+        let isQuizActive = false;
+
+        // Jarak Polisi Diperjauh Agar Pas di Kamera Chase
+        let policeOffsetZ = 3.8; 
+        let isPoliceNear = false;
+        let policeRecoverTimer = 0;
+
+        let quizTimerInterval = null;
+        let quizTimeLeft = 7;
+
+        function init3D() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x03030c);
+            scene.fog = new THREE.FogExp2(0x03030c, 0.012);
+
+            // Setting Kamera Chase Subway Surfers
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 4.5, 8.5);
+            camera.lookAt(0, 2.0, -15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Light System
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const dirLight = new THREE.DirectionalLight(0x00e5ff, 1.0);
+            dirLight.position.set(15, 30, 10);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const cityLight = new THREE.DirectionalLight(0xff00bb, 0.5);
+            cityLight.position.set(-15, 20, -20);
+            scene.add(cityLight);
+
+            createCityEnvironment();
+            createPlayer();
+            createPolice();
+
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        // KOTA CYBER URBAN DENGAN GEDUNG & TROTOAR MODERN
+        function createCityEnvironment() {
+            // Jalan Utama / Track
+            const roadGeo = new THREE.PlaneGeometry(12, 1000);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f0f18, roughness: 0.7 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.z = -450;
+            road.receiveShadow = true;
+            scene.add(road);
+
+            // Trotoar Kiri & Kanan
+            for (let side of [-7, 7]) {
+                const sidewalkGeo = new THREE.BoxGeometry(2, 0.3, 1000);
+                const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x1f1f2e });
+                const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat);
+                sidewalk.position.set(side, 0.15, -450);
+                scene.add(sidewalk);
+            }
+
+            // Pembatas Lane (Glow Neon Strips)
+            for (let x of [-1.75, 1.75]) {
+                const lineGeo = new THREE.PlaneGeometry(0.12, 1000);
+                const lineMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(x, 0.02, -450);
+                scene.add(line);
+            }
+
+            // Generasi Gedung-Gedung Kota Bertingkat
+            const buildingColors = [0x141428, 0x1a1a35, 0x0d1b2a, 0x1b263b];
+            for (let z = 0; z > -500; z -= 30) {
+                for (let side of [-15, 15]) {
+                    const height = 20 + Math.random() * 35;
+                    const width = 10 + Math.random() * 5;
+                    const depth = 15 + Math.random() * 8;
+
+                    const geo = new THREE.BoxGeometry(width, height, depth);
+                    const mat = new THREE.MeshStandardMaterial({ 
+                        color: buildingColors[Math.floor(Math.random() * buildingColors.length)], 
+                        roughness: 0.3 
+                    });
+                    const bldg = new THREE.Mesh(geo, mat);
+                    bldg.position.set(side + (side < 0 ? -width/2 : width/2), height / 2, z);
+                    scene.add(bldg);
+
+                    // Jendela Berkelap-kelip Neon Pada Gedung
+                    const windowGeo = new THREE.PlaneGeometry(width * 0.7, height * 0.7);
+                    const windowMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0x00e5ff : 0xff00aa, opacity: 0.3, transparent: true });
+                    const windows = new THREE.Mesh(windowGeo, windowMat);
+                    windows.position.set(side < 0 ? side + width/2 + 0.1 : side - width/2 - 0.1, height/2, z);
+                    windows.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+                    scene.add(windows);
+                }
+
+                // Lampu Jalan Neon
+                for (let side of [-6.2, 6.2]) {
+                    const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 6);
+                    const poleMat = new THREE.MeshStandardMaterial({ color: 0x444455 });
+                    const pole = new THREE.Mesh(poleGeo, poleMat);
+                    pole.position.set(side, 3, z);
+                    scene.add(pole);
+
+                    const lampGeo = new THREE.SphereGeometry(0.35, 16, 16);
+                    const lampMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+                    const lamp = new THREE.Mesh(lampGeo, lampMat);
+                    lamp.position.set(side, 6, z);
+                    scene.add(lamp);
+                }
+            }
+        }
+
+        function createPlayer() {
+            playerGroup = new THREE.Group();
+
+            const bodyGeo = new THREE.BoxGeometry(1, 1.6, 0.8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.name = "body";
+            body.position.y = 1;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 2.1;
+            playerGroup.add(head);
+
+            playerGroup.position.set(lanes[currentLane], 0, 0);
+            scene.add(playerGroup);
+        }
+
+        function createPolice() {
+            policeGroup = new THREE.Group();
+
+            const bodyGeo = new THREE.BoxGeometry(1.2, 1.6, 0.9);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a237e });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1;
+            body.castShadow = true;
+            policeGroup.add(body);
+
+            const headGeo = new THREE.BoxGeometry(0.65, 0.65, 0.65);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 2.1;
+            policeGroup.add(head);
+
+            const capGeo = new THREE.BoxGeometry(0.85, 0.25, 0.85);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0x0d47a1 });
+            const cap = new THREE.Mesh(capGeo, capMat);
+            cap.position.y = 2.5;
+            policeGroup.add(cap);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ff0055';
+            ctx.fillRect(0, 0, 256, 64);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('POLISI', 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const labelGeo = new THREE.PlaneGeometry(2, 0.5);
+            const labelMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+            const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+            labelMesh.position.y = 3.2;
+            policeGroup.add(labelMesh);
+
+            policeGroup.position.set(lanes[currentLane], 0, policeOffsetZ);
+            scene.add(policeGroup);
+        }
+
+        function spawnObstacle() {
+            if (isFlying) return;
+
+            const laneIdx = Math.floor(Math.random() * 3);
+            const isTall = Math.random() > 0.5;
+
+            const geo = isTall ? new THREE.BoxGeometry(2.2, 3, 1) : new THREE.BoxGeometry(2.2, 1.2, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2d2d44, roughness: 0.4 });
+            const obs = new THREE.Mesh(geo, mat);
+
+            obs.position.set(lanes[laneIdx], isTall ? 1.5 : 0.6, -110);
+            obs.castShadow = true;
+            obs.userData = { isTall: isTall };
+
+            scene.add(obs);
+            obstacles.push(obs);
+        }
+
+        function spawnCoin(heightY = 1.0) {
+            const laneIdx = Math.floor(Math.random() * 3);
+            const geo = new THREE.CylinderGeometry(0.45, 0.45, 0.12, 16);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.9, roughness: 0.1 });
+            const coin = new THREE.Mesh(geo, mat);
+
+            coin.rotation.x = Math.PI / 2;
+            coin.position.set(lanes[laneIdx], heightY, -110);
+            scene.add(coin);
+            coins.push(coin);
+        }
+
+        function spawnMysteryBox() {
+            const laneIdx = Math.floor(Math.random() * 3);
+            const boxGroup = new THREE.Group();
+
+            const geo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.2 });
+            const box = new THREE.Mesh(geo, mat);
+            boxGroup.add(box);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 90px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('?', 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const qGeo = new THREE.PlaneGeometry(1.0, 1.0);
+            const qMat = new THREE.MeshBasicMaterial({ map: texture });
+            const qMesh = new THREE.Mesh(qGeo, qMat);
+            qMesh.position.z = 0.61;
+            boxGroup.add(qMesh);
+
+            boxGroup.position.set(lanes[laneIdx], 1.2, -120);
+            scene.add(boxGroup);
+            mysteryBoxes.push(boxGroup);
+        }
+
+        function spawnJetpack() {
+            if (isFlying) return;
+            const laneIdx = Math.floor(Math.random() * 3);
+
+            const geo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xff00dd });
+            const box = new THREE.Mesh(geo, mat);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ff00dd';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 70px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🚀', 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const qGeo = new THREE.PlaneGeometry(1.0, 1.0);
+            const qMat = new THREE.MeshBasicMaterial({ map: texture });
+            const qMesh = new THREE.Mesh(qGeo, qMat);
+            qMesh.position.z = 0.61;
+            box.add(qMesh);
+
+            box.position.set(lanes[laneIdx], 1.2, -130);
+            scene.add(box);
+            jetpackItems.push(box);
+        }
+
+        function handleKeyDown(e) {
+            if (!isGameRunning || isQuizActive) return;
+
+            if ((e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') && currentLane > 0) {
+                currentLane--;
+            } else if ((e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') && currentLane < 2) {
+                currentLane++;
+            } else if ((e.key === 'w' || e.key === 'W' || e.key === ' ' || e.key === 'ArrowUp') && !isJumping && !isFlying) {
+                isJumping = true;
+                jumpVelocity = 0.26;
+            } else if ((e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') && !isSliding && !isFlying) {
+                isSliding = true;
+                slideTimer = 30;
+            }
+
+            targetX = lanes[currentLane];
+        }
+
+        function updateGame() {
+            if (!isGameRunning || isQuizActive) return;
+
+            playerGroup.position.x += (targetX - playerGroup.position.x) * 0.22;
+
+            policeGroup.position.x += (playerGroup.position.x - policeGroup.position.x) * 0.15;
+            policeGroup.position.z = playerGroup.position.z + policeOffsetZ;
+
+            if (isFlying) {
+                flyTimer -= 0.016;
+                document.getElementById('jetpack-time').innerText = Math.ceil(flyTimer) + 's';
+
+                playerGroup.position.y += (6 - playerGroup.position.y) * 0.1;
+                policeGroup.position.y += (-2 - policeGroup.position.y) * 0.1;
+
+                if (flyTimer <= 0) {
+                    isFlying = false;
+                    document.getElementById('jetpack-hud').style.display = 'none';
+                }
+            } else {
+                if (!isJumping) {
+                    playerGroup.position.y += (0 - playerGroup.position.y) * 0.1;
+                }
+                policeGroup.position.y += (0 - policeGroup.position.y) * 0.1;
+
+                if (isJumping) {
+                    playerGroup.position.y += jumpVelocity;
+                    jumpVelocity -= 0.016;
+                    if (playerGroup.position.y <= 0) {
+                        playerGroup.position.y = 0;
+                        isJumping = false;
+                    }
+                }
+            }
+
+            if (isPoliceNear && !isFlying) {
+                policeRecoverTimer--;
+                if (policeRecoverTimer <= 0) {
+                    isPoliceNear = false;
+                    policeOffsetZ = 3.8; // Polisi Mundur ke Jarak Aman
+                    document.getElementById('warning-tag').style.display = 'none';
+                }
+            }
+
+            const bodyMesh = playerGroup.getObjectByName("body");
+            if (isSliding && !isFlying) {
+                bodyMesh.scale.y = 0.5;
+                bodyMesh.position.y = 0.5;
+                slideTimer--;
+                if (slideTimer <= 0) {
+                    isSliding = false;
+                    bodyMesh.scale.y = 1.0;
+                    bodyMesh.position.y = 1;
+                }
+            }
+
+            if (Math.random() < 0.02) spawnObstacle();
+            if (Math.random() < 0.04) spawnCoin(isFlying ? 6.0 : 1.0);
+            if (Math.random() < 0.005) spawnMysteryBox();
+            if (Math.random() < 0.002) spawnJetpack();
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.position.z += speed;
+
+                if (!isFlying && Math.abs(obs.position.z - playerGroup.position.z) < 0.9 &&
+                    Math.abs(obs.position.x - playerGroup.position.x) < 1.1) {
+                    
+                    let hit = false;
+                    if (obs.userData.isTall && !isSliding) hit = true;
+                    if (!obs.userData.isTall && playerGroup.position.y < 1.2) hit = true;
+
+                    if (hit) {
+                        scene.remove(obs);
+                        obstacles.splice(i, 1);
+                        handleObstacleHit();
+                        continue;
+                    }
+                }
+
+                if (obs.position.z > 10) {
+                    scene.remove(obs);
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            for (let i = coins.length - 1; i >= 0; i--) {
+                let coin = coins[i];
+                coin.position.z += speed;
+                coin.rotation.z += 0.05;
+
+                let distZ = Math.abs(coin.position.z - playerGroup.position.z);
+                let distX = Math.abs(coin.position.x - playerGroup.position.x);
+                let distY = Math.abs(coin.position.y - playerGroup.position.y);
+
+                if (distZ < 1.2 && distX < 1.2 && distY < 2.0) {
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                    coinCount++;
+                    score += 100;
+                    document.getElementById('coin-val').innerText = coinCount;
+                    continue;
+                }
+
+                if (coin.position.z > 10) {
+                    scene.remove(coin);
+                    coins.splice(i, 1);
+                }
+            }
+
+            for (let i = jetpackItems.length - 1; i >= 0; i--) {
+                let item = jetpackItems[i];
+                item.position.z += speed;
+                item.rotation.y += 0.05;
+
+                if (Math.abs(item.position.z - playerGroup.position.z) < 1.2 &&
+                    Math.abs(item.position.x - playerGroup.position.x) < 1.2) {
+                    
+                    scene.remove(item);
+                    jetpackItems.splice(i, 1);
+                    activateJetpack();
+                    continue;
+                }
+
+                if (item.position.z > 10) {
+                    scene.remove(item);
+                    jetpackItems.splice(i, 1);
+                }
+            }
+
+            for (let i = mysteryBoxes.length - 1; i >= 0; i--) {
+                let box = mysteryBoxes[i];
+                box.position.z += speed;
+                box.rotation.y += 0.04;
+
+                if (Math.abs(box.position.z - playerGroup.position.z) < 1.2 &&
+                    Math.abs(box.position.x - playerGroup.position.x) < 1.2) {
+                    
+                    scene.remove(box);
+                    mysteryBoxes.splice(i, 1);
+                    triggerQuiz();
+                    return;
+                }
+
+                if (box.position.z > 10) {
+                    scene.remove(box);
+                    mysteryBoxes.splice(i, 1);
+                }
+            }
+
+            camera.position.x = playerGroup.position.x * 0.4;
+            camera.position.y = 4.5 + (playerGroup.position.y * 0.4);
+
+            score += 1;
+            document.getElementById('score-val').innerText = score;
+            speed += 0.00004;
+        }
+
+        function activateJetpack() {
+            isFlying = true;
+            flyTimer = 20;
+            document.getElementById('jetpack-hud').style.display = 'block';
+        }
+
+        function handleObstacleHit() {
+            if (isPoliceNear) {
+                gameOver();
+            } else {
+                isPoliceNear = true;
+                policeOffsetZ = 1.2; // Polisi Sangat Dekat Saat Menabrak
+                policeRecoverTimer = 180;
+                document.getElementById('warning-tag').style.display = 'block';
+            }
+        }
+
+        function triggerQuiz() {
+            isQuizActive = true;
+            const qObj = quizBank[Math.floor(Math.random() * quizBank.length)];
+
+            document.getElementById('quiz-q').innerText = qObj.q;
+            const optGrid = document.getElementById('quiz-options');
+            optGrid.innerHTML = '';
+
+            qObj.opts.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt';
+                btn.innerText = `${String.fromCharCode(65 + idx)}. ${optText}`;
+                btn.onclick = () => handleQuizAnswer(idx === qObj.ans);
+                optGrid.appendChild(btn);
+            });
+
+            document.getElementById('quiz-modal').style.display = 'block';
+
+            quizTimeLeft = 7;
+            const timerFill = document.getElementById('quiz-timer');
+            timerFill.style.width = '100%';
+
+            clearInterval(quizTimerInterval);
+            quizTimerInterval = setInterval(() => {
+                quizTimeLeft -= 0.1;
+                timerFill.style.width = Math.max(0, (quizTimeLeft / 7) * 100) + '%';
+
+                if (quizTimeLeft <= 0) {
+                    clearInterval(quizTimerInterval);
+                    handleQuizAnswer(false);
+                }
+            }, 100);
+        }
+
+        function handleQuizAnswer(isCorrect) {
+            clearInterval(quizTimerInterval);
+            document.getElementById('quiz-modal').style.display = 'none';
+            isQuizActive = false;
+
+            if (isCorrect) {
+                score += 500;
+            } else {
+                handleObstacleHit();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateGame();
+            renderer.render(scene, camera);
+        }
+
+        function startApp() {
+            document.getElementById('screen-overlay').style.display = 'none';
+            resetGame();
+            isGameRunning = true;
+        }
+
+        function resetGame() {
+            obstacles.forEach(o => scene.remove(o));
+            coins.forEach(c => scene.remove(c));
+            mysteryBoxes.forEach(m => scene.remove(m));
+            jetpackItems.forEach(j => scene.remove(j));
+            
+            obstacles = [];
+            coins = [];
+            mysteryBoxes = [];
+            jetpackItems = [];
+
+            score = 0;
+            coinCount = 0;
+            speed = 0.45;
+            currentLane = 1;
+            targetX = lanes[currentLane];
+            
+            isFlying = false;
+            flyTimer = 0;
+            policeOffsetZ = 3.8;
+            isPoliceNear = false;
+
+            playerGroup.position.set(0, 0, 0);
+            policeGroup.position.set(0, 0, policeOffsetZ);
+
+            document.getElementById('score-val').innerText = '0';
+            document.getElementById('coin-val').innerText = '0';
+            document.getElementById('warning-tag').style.display = 'none';
+            document.getElementById('jetpack-hud').style.display = 'none';
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            document.getElementById('screen-overlay').style.display = 'flex';
+            document.getElementById('menu-title').innerText = "TERTANGKAP!";
+            document.getElementById('menu-sub').innerText = `Polisi menangkap Anda! | Skor: ${score} | Koin: ${coinCount}`;
+            document.getElementById('btn-action').innerText = "MAIN LAGI";
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init3D();
+        animate();
+    </script>
+</body>
+</html>
